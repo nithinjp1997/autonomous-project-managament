@@ -1,0 +1,12 @@
+{
+  "office_standard": "Dubai-Office-v3",
+  "project_lifecycle": {
+    "concept": ["Site Analysis", "Massing", "FAR Check"],
+    "schematic": ["MEP Coordination", "DM Preliminary Submission"],
+    "detailed": ["Structure Review", "Civil Defence NOC"]
+  },
+  "critical_alert_thresholds": {
+    "far_overage_percent": 2.0,
+    "setback_violation_mm": 100
+  }
+}

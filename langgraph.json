@@ -1,0 +1,6 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "apm": "./src/apm/agent.py:make_graph"
+  }
+}
