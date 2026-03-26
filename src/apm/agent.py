@@ -44,10 +44,14 @@ def _ensure_indexed() -> None:
 # ---------------------------------------------------------------------------
 @tool
 def read_project_files() -> str:
-    """Read all project data files (meeting minutes, SOP, system logs).
+    """Load all internal project documents into a single text payload.
 
-    Call this tool FIRST to load the project context before doing any analysis.
-    Returns the contents of meeting minutes, firm SOP, and system logs.
+    Call this tool before compliance analysis so findings are grounded
+    in actual project data rather than assumptions.
+
+    Returns:
+        str: A single string containing three labeled sections —
+            meeting notes, internal policy thresholds, and system logs.
     """
     files = {
         "meeting_minutes": DATA_DIR / "meeting_minutes_alpha.txt",
@@ -64,12 +68,20 @@ def read_project_files() -> str:
 
 
 @tool(response_format="content_and_artifact")
-def retrieve_building_code(query: str):
-    """Search the Dubai Building Code for regulations, limits, or standards.
+def retrieve_building_code(query: str) -> tuple[str, list]:
+    """Retrieve relevant Dubai Building Code excerpts for a focused query.
 
-    Use this tool whenever you need to look up zoning rules, FAR limits,
-    setback requirements, parking ratios, energy codes, or any other
-    regulatory constraint from the official Dubai Building Code PDF.
+    Prefer narrow, targeted queries (e.g. FAR limits, parking requirements,
+    setback rules, energy criteria) so returned citations are precise.
+
+    Args:
+        query: A specific regulatory question to search against the
+            Dubai Building Code PDF.
+
+    Returns:
+        tuple[str, list]: A two-element tuple where:
+            - content (str): Readable snippets with source page labels.
+            - artifact (list): Retrieved Document objects for traceability.
     """
     retrieved_docs = _vector_store.similarity_search(query, k=4)
     serialized = "\n\n".join(
@@ -83,49 +95,9 @@ def retrieve_building_code(query: str):
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = """\
-You are APM, a construction compliance analyst.
+SYSTEM_PROMPT = """You are an Autonomous Project Manager (APM) agent responsible for ensuring that a construction project complies with the Dubai Building Code. Answer the user's queries by using the tools at your disposal. Your task is to analyze and flag any potential compliance issues. Generate a well drafted response to the user queries.
 
-You have 2 tools:
-- read_project_files: returns internal project documents.
-- retrieve_building_code: returns Dubai code excerpts with page numbers.
-
-Follow this exact sequence:
-1) Call read_project_files once.
-2) Call retrieve_building_code at least 3 times with focused queries:
-   - FAR / density limit
-   - parking requirement
-   - setback or balcony rule
-   - energy efficiency rule (if relevant)
-3) Write final answer in markdown.
-
-Output format:
-## Compliance Status
-One line: compliant / non_compliant / needs_review
-
-## Key Findings
-- Finding with severity (HIGH/MEDIUM/LOW) and inline citation [1]
-- Finding with inline citation [2]
-
-## Data Conflicts
-- Field mismatch: source A vs source B [3]
-
-## Recommended Actions
-- Action 1
-- Action 2
-
-## References
-[1] Building code p.X - short quote
-[2] Internal document - short quote
-[3] Internal document - short quote
-[4] Internal policy threshold - short quote
-
-Rules:
-- Do not answer until tools are called.
-- Do not invent values, pages, quotes, or source names.
-- Use source labels exactly as returned by tools.
-- If evidence is missing, write "Insufficient evidence".
-- Keep answer under 220 words.
+When your answer references information from the building code or project files, add inline citations using [1], [2], etc. At the end of your response, list all citations under a "References" heading with the source name and page number (if applicable).
 """
 
 
